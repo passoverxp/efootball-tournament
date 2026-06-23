@@ -1,0 +1,62 @@
+@{
+    ViewData["Title"] = "Standings";
+    var groups = ViewBag.Groups as Dictionary<string, List<dynamic>>;
+}
+
+<div style="max-width:900px; margin:40px auto; padding:20px; color:white;">
+    <h2 style="color:#e94560; text-align:center;">📊 Group Standings</h2>
+
+    @if (groups == null || groups.Count == 0)
+    {
+        <div style="background:#16213e; padding:30px; border-radius:12px; text-align:center;">
+            <p>No standings yet. Tournament hasn't started.</p>
+        </div>
+    }
+    else
+    {
+        foreach (var group in groups)
+        {
+            <div style="background:#16213e; padding:20px; border-radius:12px; margin-bottom:25px;">
+                <h3 style="color:#e94560;">Group @group.Key</h3>
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr style="color:#aaa; font-size:0.85em; border-bottom:1px solid #333;">
+                        <th style="text-align:left; padding:8px;">Team</th>
+                        <th style="padding:8px;">P</th>
+                        <th style="padding:8px;">W</th>
+                        <th style="padding:8px;">D</th>
+                        <th style="padding:8px;">L</th>
+                        <th style="padding:8px;">GF</th>
+                        <th style="padding:8px;">GA</th>
+                        <th style="padding:8px;">GD</th>
+                        <th style="padding:8px; color:white;">PTS</th>
+                    </tr>
+                    @{ int rank = 1; }
+                    @foreach (var team in group.Value)
+                    {
+                        bool isLast = rank == group.Value.Count;
+                        <tr style="border-bottom:1px solid #222; @(isLast ? "color:#e94560;" : "")">
+                            <td style="padding:10px;">
+                                @if (isLast){ <span>❌</span> } 
+                                else { <span>✅</span> }
+                                @team.Name
+                            </td>
+                            <td style="text-align:center; padding:8px;">@team.Played</td>
+                            <td style="text-align:center; padding:8px;">@team.Wins</td>
+                            <td style="text-align:center; padding:8px;">@team.Draws</td>
+                            <td style="text-align:center; padding:8px;">@team.Losses</td>
+                            <td style="text-align:center; padding:8px;">@team.GoalsFor</td>
+                            <td style="text-align:center; padding:8px;">@team.GoalsAgainst</td>
+                            <td style="text-align:center; padding:8px;">@team.GoalDiff</td>
+                            <td style="text-align:center; padding:8px; font-weight:bold; color:#e94560;">@team.Points</td>
+                        </tr>
+                        rank++;
+                    }
+                </table>
+            </div>
+        }
+    }
+
+    <p style="text-align:center;">
+        <a href="/" style="color:#e94560;">← Back to Home</a>
+    </p>
+</div>

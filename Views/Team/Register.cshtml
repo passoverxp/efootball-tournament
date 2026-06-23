@@ -1,0 +1,99 @@
+@model EFootballWeb.Models.TeamRegisterViewModel
+@{
+    ViewData["Title"] = "Register Team";
+}
+
+<div style="max-width:550px; margin:40px auto; padding:30px; 
+            background:#1a1a2e; border-radius:12px; color:white;">
+
+    <h2 style="text-align:center; color:#e94560;">🏆 Register Your Team</h2>
+    <p style="text-align:center; color:#aaa;">
+        Registration closes: <strong>@ViewBag.Deadline</strong>
+    </p>
+
+    @if (ViewBag.Error != null)
+    {
+        <div style="background:#e94560; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ⚠️ @ViewBag.Error
+        </div>
+    }
+    @if (ViewBag.Success != null)
+    {
+        <div style="background:#0f3460; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ✅ @ViewBag.Success
+        </div>
+    }
+
+    <form method="post" enctype="multipart/form-data">
+
+        <!-- TEAM NAME -->
+        <div style="margin-bottom:20px;">
+            <label style="font-size:1.1em;">⚽ Team Name</label>
+            <input name="TeamName" type="text" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:none; background:#16213e; color:white;" />
+        </div>
+
+        <!-- SQUAD SCREENSHOT -->
+        <div style="margin-bottom:20px;">
+            <label style="font-size:1.1em;">📸 Squad Screenshot</label>
+            <p style="color:#aaa; font-size:0.85em;">Upload a screenshot of your eFootball squad</p>
+            <input name="SquadScreenshot" type="file" accept="image/*" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:1px solid #333; background:#16213e; color:white;" />
+        </div>
+
+        <!-- PLAYERS -->
+        <label style="font-size:1.1em;">👥 Players (11 starting + 6 substitutes = 17)</label>
+        <p style="color:#aaa; font-size:0.85em;">Mark one player as goalkeeper 🧤</p>
+
+        <div style="background:#16213e; padding:15px; border-radius:10px; margin-bottom:10px;">
+            <p style="color:#e94560; margin:0 0 10px 0;">Starting 11</p>
+            <div style="display:flex; justify-content:space-between; 
+                        color:#aaa; font-size:0.8em; margin-bottom:5px;">
+                <span style="width:25px;">#</span>
+                <span style="flex:1; margin-left:10px;">Player Name</span>
+                <span>🧤 GK</span>
+            </div>
+            @for (int i = 0; i < 11; i++)
+            {
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                    <span style="color:#e94560; width:25px;">@(i + 1).</span>
+                    <input name="PlayerNames[@i]" type="text"
+                        placeholder="Player @(i + 1)"
+                        style="flex:1; padding:8px; border-radius:6px; 
+                               border:none; background:#0f3460; color:white;" />
+                    <input name="GoalkeeperIndex" type="radio" value="@i"
+                        style="width:18px; height:18px; cursor:pointer;"
+                        @(i == 0 ? "checked" : "") />
+                </div>
+            }
+        </div>
+
+        <div style="background:#16213e; padding:15px; border-radius:10px; margin-bottom:20px;">
+            <p style="color:#e94560; margin:0 0 10px 0;">6 Substitutes</p>
+            @for (int i = 11; i < 17; i++)
+            {
+                <div style="margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                    <span style="color:#aaa; width:25px;">@(i + 1).</span>
+                    <input name="PlayerNames[@i]" type="text"
+                        placeholder="Substitute @(i - 10)"
+                        style="flex:1; padding:8px; border-radius:6px; 
+                               border:none; background:#0f3460; color:white;" />
+                    <input name="GoalkeeperIndex" type="radio" value="@i"
+                        style="width:18px; height:18px; cursor:pointer;" />
+                </div>
+            }
+        </div>
+
+        <button type="submit"
+            style="width:100%; padding:12px; background:#e94560; color:white; 
+                   border:none; border-radius:6px; font-size:16px; cursor:pointer;">
+            ✅ Register Team
+        </button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px;">
+        <a href="/" style="color:#e94560;">← Back to Home</a>
+    </p>
+</div>

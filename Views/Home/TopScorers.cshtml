@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Top Scorers";
+    var scorers = ViewBag.Scorers as List<dynamic>;
+}
+
+<div style="max-width:700px; margin:40px auto; padding:20px; color:white;">
+    <h2 style="color:#e94560; text-align:center;">⚽ Top Scorers</h2>
+
+    @if (scorers == null || scorers.Count == 0)
+    {
+        <div style="background:#16213e; padding:30px; border-radius:12px; text-align:center;">
+            <p>No goals scored yet.</p>
+        </div>
+    }
+    else
+    {
+        <div style="background:#16213e; padding:20px; border-radius:12px;">
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="color:#aaa; font-size:0.85em; border-bottom:1px solid #333;">
+                    <th style="padding:10px; text-align:left;">#</th>
+                    <th style="padding:10px; text-align:left;">Player</th>
+                    <th style="padding:10px; text-align:left;">Team</th>
+                    <th style="padding:10px; text-align:left;">Group</th>
+                    <th style="padding:10px; text-align:center; color:white;">Goals</th>
+                </tr>
+                @{ int rank = 1; }
+                @foreach (var scorer in scorers)
+                {
+                    string medal = rank == 1 ? "🥇" : rank == 2 ? "🥈" : rank == 3 ? "🥉" : $"{rank}.";
+                    <tr style="border-bottom:1px solid #222;">
+                        <td style="padding:10px;">@medal</td>
+                        <td style="padding:10px; font-weight:bold;">@scorer.Player</td>
+                        <td style="padding:10px; color:#aaa;">@scorer.Team</td>
+                        <td style="padding:10px; color:#aaa;">@scorer.Group</td>
+                        <td style="padding:10px; text-align:center; color:#e94560; font-weight:bold; font-size:1.2em;">@scorer.Goals</td>
+                    </tr>
+                    rank++;
+                }
+            </table>
+        </div>
+    }
+
+    <p style="text-align:center; margin-top:20px;">
+        <a href="/" style="color:#e94560;">← Back to Home</a>
+    </p>
+</div>

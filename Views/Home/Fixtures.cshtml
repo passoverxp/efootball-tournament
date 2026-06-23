@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Fixtures";
+    var groups = ViewBag.Groups as Dictionary<string, List<dynamic>>;
+}
+
+<div style="max-width:800px; margin:40px auto; padding:20px; color:white;">
+    <h2 style="color:#e94560; text-align:center;">📅 Match Fixtures</h2>
+
+    @if (groups == null || groups.Count == 0)
+    {
+        <div style="background:#16213e; padding:30px; border-radius:12px; text-align:center;">
+            <p>No fixtures yet. Tournament hasn't started.</p>
+        </div>
+    }
+    else
+    {
+        foreach (var group in groups)
+        {
+            <div style="background:#16213e; padding:20px; border-radius:12px; margin-bottom:25px;">
+                <h3 style="color:#e94560;">Group @group.Key</h3>
+                @foreach (var match in group.Value)
+                {
+                    string bg = match.Status == "completed" ? "#0f3460"
+                              : match.Status == "disputed"  ? "#7b2d00"
+                              : "#1a1a2e";
+                    <div style="background:@bg; padding:15px; border-radius:8px; 
+                                margin-bottom:10px; display:flex; 
+                                justify-content:space-between; align-items:center;">
+                        <span style="flex:1; text-align:right;">@match.HomeTeam</span>
+                        <span style="margin:0 15px; color:#e94560; font-weight:bold;">
+                            @(match.Status == "completed" 
+                                ? $"{match.HomeScore} - {match.AwayScore}" 
+                                : "vs")
+                        </span>
+                        <span style="flex:1;">@match.AwayTeam</span>
+                        <span style="color:#aaa; font-size:0.8em; margin-left:10px;">
+                            @match.Status.ToUpper()
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    }
+
+    <p style="text-align:center;">
+        <a href="/" style="color:#e94560;">← Back to Home</a>
+    </p>
+</div>

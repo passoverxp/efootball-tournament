@@ -1,0 +1,60 @@
+@model EFootballWeb.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div style="max-width:400px; margin:60px auto; padding:30px; 
+            background:#1a1a2e; border-radius:12px; color:white;">
+
+    <h2 style="text-align:center; color:#e94560;">🏆 eFootball Tournament</h2>
+    <h4 style="text-align:center; margin-bottom:20px;">Create Account</h4>
+
+    @if (ViewBag.Error != null)
+    {
+        <div style="background:#e94560; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ⚠️ @ViewBag.Error
+        </div>
+    }
+    @if (ViewBag.Success != null)
+    {
+        <div style="background:#0f3460; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ✅ @ViewBag.Success
+        </div>
+    }
+
+    <form method="post">
+        <div style="margin-bottom:15px;">
+            <label>Username</label>
+            <input name="Username" type="text" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:none; background:#16213e; color:white;" />
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Email</label>
+            <input name="Email" type="email" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:none; background:#16213e; color:white;" />
+        </div>
+        <div style="margin-bottom:15px;">
+            <label>Password</label>
+            <input name="Password" type="password" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:none; background:#16213e; color:white;" />
+        </div>
+        <div style="margin-bottom:20px;">
+            <label>Confirm Password</label>
+            <input name="ConfirmPassword" type="password" required
+                style="width:100%; padding:10px; margin-top:5px; border-radius:6px; 
+                       border:none; background:#16213e; color:white;" />
+        </div>
+        <button type="submit"
+            style="width:100%; padding:12px; background:#e94560; color:white; 
+                   border:none; border-radius:6px; font-size:16px; cursor:pointer;">
+            Register
+        </button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px;">
+        Already have an account? <a href="/Account/Login" style="color:#e94560;">Login</a>
+    </p>
+</div>

@@ -1,0 +1,121 @@
+@model EFootballWeb.Models.ScoreSubmissionViewModel
+@{
+    ViewData["Title"] = "Submit Score";
+}
+
+<div style="max-width:600px; margin:40px auto; padding:30px; 
+            background:#1a1a2e; border-radius:12px; color:white;">
+
+    <h2 style="text-align:center; color:#e94560;">📝 Submit Match Score</h2>
+
+    @if (ViewBag.Error != null)
+    {
+        <div style="background:#e94560; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ⚠️ @ViewBag.Error
+        </div>
+    }
+    @if (ViewBag.Success != null)
+    {
+        <div style="background:#0f3460; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ✅ @ViewBag.Success
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" name="MatchId" value="@Model.MatchId" />
+        <input type="hidden" name="HomeTeamId" value="@Model.HomeTeamId" />
+        <input type="hidden" name="AwayTeamId" value="@Model.AwayTeamId" />
+        <input type="hidden" name="HomeTeamName" value="@Model.HomeTeamName" />
+        <input type="hidden" name="AwayTeamName" value="@Model.AwayTeamName" />
+
+        <!-- SCORE -->
+        <div style="display:flex; justify-content:space-between; 
+                    align-items:center; margin-bottom:30px;">
+            <div style="text-align:center; flex:1;">
+                <p style="font-weight:bold; color:#e94560;">@Model.HomeTeamName</p>
+                <input name="HomeScore" type="number" min="0" max="20" value="0" required
+                    style="width:80px; padding:10px; border-radius:6px; 
+                           border:none; background:#16213e; color:white; 
+                           font-size:1.5em; text-align:center;" />
+            </div>
+            <div style="font-size:1.5em; color:#aaa;">VS</div>
+            <div style="text-align:center; flex:1;">
+                <p style="font-weight:bold; color:#e94560;">@Model.AwayTeamName</p>
+                <input name="AwayScore" type="number" min="0" max="20" value="0" required
+                    style="width:80px; padding:10px; border-radius:6px; 
+                           border:none; background:#16213e; color:white; 
+                           font-size:1.5em; text-align:center;" />
+            </div>
+        </div>
+
+        <!-- HOME TEAM PLAYERS -->
+        <div style="background:#16213e; padding:15px; border-radius:10px; margin-bottom:15px;">
+            <h4 style="color:#e94560;">@Model.HomeTeamName Players</h4>
+            <div style="display:flex; color:#aaa; font-size:0.8em; margin-bottom:8px;">
+                <span style="flex:1;">Player</span>
+                <span style="width:60px; text-align:center;">⚽ Goals</span>
+                <span style="width:60px; text-align:center;">🎯 Assists</span>
+            </div>
+            @for (int i = 0; i < Model.HomePlayers.Count; i++)
+            {
+                <input type="hidden" name="HomePlayers[@i].PlayerId" value="@Model.HomePlayers[i].PlayerId" />
+                <input type="hidden" name="HomePlayers[@i].TeamId" value="@Model.HomePlayers[i].TeamId" />
+                <input type="hidden" name="HomePlayers[@i].IsGoalkeeper" value="@Model.HomePlayers[i].IsGoalkeeper" />
+                <input type="hidden" name="HomePlayers[@i].PlayerName" value="@Model.HomePlayers[i].PlayerName" />
+                <div style="display:flex; align-items:center; margin-bottom:8px;">
+                    <span style="flex:1;">
+                        @Model.HomePlayers[i].PlayerName
+                        @if (Model.HomePlayers[i].IsGoalkeeper)
+                        { <span style="color:#aaa; font-size:0.8em;">🧤</span> }
+                    </span>
+                    <input name="HomePlayers[@i].Goals" type="number" min="0" max="20" value="0"
+                        style="width:55px; padding:6px; border-radius:6px; 
+                               border:none; background:#0f3460; color:white; text-align:center;" />
+                    <input name="HomePlayers[@i].Assists" type="number" min="0" max="20" value="0"
+                        style="width:55px; padding:6px; border-radius:6px; margin-left:5px;
+                               border:none; background:#0f3460; color:white; text-align:center;" />
+                </div>
+            }
+        </div>
+
+        <!-- AWAY TEAM PLAYERS -->
+        <div style="background:#16213e; padding:15px; border-radius:10px; margin-bottom:20px;">
+            <h4 style="color:#e94560;">@Model.AwayTeamName Players</h4>
+            <div style="display:flex; color:#aaa; font-size:0.8em; margin-bottom:8px;">
+                <span style="flex:1;">Player</span>
+                <span style="width:60px; text-align:center;">⚽ Goals</span>
+                <span style="width:60px; text-align:center;">🎯 Assists</span>
+            </div>
+            @for (int i = 0; i < Model.AwayPlayers.Count; i++)
+            {
+                <input type="hidden" name="AwayPlayers[@i].PlayerId" value="@Model.AwayPlayers[i].PlayerId" />
+                <input type="hidden" name="AwayPlayers[@i].TeamId" value="@Model.AwayPlayers[i].TeamId" />
+                <input type="hidden" name="AwayPlayers[@i].IsGoalkeeper" value="@Model.AwayPlayers[i].IsGoalkeeper" />
+                <input type="hidden" name="AwayPlayers[@i].PlayerName" value="@Model.AwayPlayers[i].PlayerName" />
+                <div style="display:flex; align-items:center; margin-bottom:8px;">
+                    <span style="flex:1;">
+                        @Model.AwayPlayers[i].PlayerName
+                        @if (Model.AwayPlayers[i].IsGoalkeeper)
+                        { <span style="color:#aaa; font-size:0.8em;">🧤</span> }
+                    </span>
+                    <input name="AwayPlayers[@i].Goals" type="number" min="0" max="20" value="0"
+                        style="width:55px; padding:6px; border-radius:6px; 
+                               border:none; background:#0f3460; color:white; text-align:center;" />
+                    <input name="AwayPlayers[@i].Assists" type="number" min="0" max="20" value="0"
+                        style="width:55px; padding:6px; border-radius:6px; margin-left:5px;
+                               border:none; background:#0f3460; color:white; text-align:center;" />
+                </div>
+            }
+        </div>
+
+        <button type="submit"
+            style="width:100%; padding:12px; background:#e94560; color:white; 
+                   border:none; border-radius:6px; font-size:16px; cursor:pointer;">
+            ✅ Submit Score
+        </button>
+    </form>
+
+    <p style="text-align:center; margin-top:15px;">
+        <a href="/Match/MyMatches" style="color:#e94560;">← Back to My Matches</a>
+    </p>
+</div>

@@ -1,0 +1,58 @@
+@model List<EFootballWeb.Models.Match>
+@{
+    ViewData["Title"] = "My Matches";
+}
+
+<div style="max-width:800px; margin:40px auto; padding:20px; color:white;">
+    <h2 style="color:#e94560; text-align:center;">🎮 My Matches</h2>
+
+    @if (ViewBag.Error != null)
+    {
+        <div style="background:#e94560; padding:10px; border-radius:6px; margin-bottom:15px;">
+            ⚠️ @ViewBag.Error
+        </div>
+    }
+
+    @if (Model.Count == 0)
+    {
+        <div style="background:#16213e; padding:30px; border-radius:12px; text-align:center;">
+            <p>No matches yet. Tournament hasn't started or fixtures not generated.</p>
+        </div>
+    }
+    else
+    {
+        foreach (var match in Model)
+        {
+            string bgColor = match.Status == "completed" ? "#0f3460" 
+                           : match.Status == "disputed" ? "#7b2d00" 
+                           : "#16213e";
+
+            <div style="background:@bgColor; padding:20px; border-radius:12px; margin-bottom:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="color:#aaa; font-size:0.85em;">Group @match.GroupName</span>
+                    <span style="color:#e94560; font-size:0.85em;">@match.Status.ToUpper()</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0;">
+                    <span style="font-size:1.2em; font-weight:bold;">@match.HomeTeamName</span>
+                    <span style="font-size:1.5em; color:#e94560;">
+                        @(match.Status == "completed" ? $"{match.HomeScore} - {match.AwayScore}" : "vs")
+                    </span>
+                    <span style="font-size:1.2em; font-weight:bold;">@match.AwayTeamName</span>
+                </div>
+                @if (match.Status == "pending" || match.Status == "disputed")
+                {
+                    <a href="/Match/SubmitScore/@match.Id"
+                       style="display:block; text-align:center; background:#e94560; 
+                              color:white; padding:10px; border-radius:6px; 
+                              text-decoration:none; margin-top:10px;">
+                        📝 Submit Score
+                    </a>
+                }
+            </div>
+        }
+    }
+
+    <p style="text-align:center; margin-top:20px;">
+        <a href="/" style="color:#e94560;">← Back to Home</a>
+    </p>
+</div>

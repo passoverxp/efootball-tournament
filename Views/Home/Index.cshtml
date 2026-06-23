@@ -1,0 +1,90 @@
+﻿cat > ~/EFootballWeb/Views/Home/Index.cshtml << 'EOF'
+@{
+    ViewData["Title"] = "Home";
+}
+
+<div style="background:#1a1a2e; min-height:100vh; color:white; padding:40px 20px;">
+
+    <div style="text-align:center; margin-bottom:40px;">
+        <h1 style="color:#e94560; font-size:2.5em;">🏆 eFootball Tournament</h1>
+        <p style="color:#aaa;">Welcome to the official tournament platform</p>
+
+        @if (Context.Session.GetString("Username") != null)
+        {
+            <div style="background:#16213e; padding:15px; border-radius:10px; margin-top:20px; display:inline-block;">
+                <p style="margin:0;">👋 Welcome back, <strong style="color:#e94560;">@Context.Session.GetString("Username")</strong>!</p>
+            </div>
+        }
+        else
+        {
+            <div style="margin-top:20px;">
+                <a href="/Account/Login" style="background:#e94560; color:white; padding:12px 30px; 
+                   border-radius:6px; text-decoration:none; margin-right:10px;">Login</a>
+                <a href="/Account/Register" style="background:#0f3460; color:white; padding:12px 30px; 
+                   border-radius:6px; text-decoration:none;">Register</a>
+            </div>
+        }
+    </div>
+
+    <!-- Quick Links -->
+    <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+
+        <a href="/Home/Standings" style="text-decoration:none;">
+            <div style="background:#16213e; padding:30px; border-radius:12px; 
+                        text-align:center; width:180px; color:white;">
+                <div style="font-size:2em;">📊</div>
+                <h3>Standings</h3>
+                <p style="color:#aaa; font-size:0.9em;">View group standings</p>
+            </div>
+        </a>
+
+        <a href="/Home/Fixtures" style="text-decoration:none;">
+            <div style="background:#16213e; padding:30px; border-radius:12px; 
+                        text-align:center; width:180px; color:white;">
+                <div style="font-size:2em;">📅</div>
+                <h3>Fixtures</h3>
+                <p style="color:#aaa; font-size:0.9em;">View match schedule</p>
+            </div>
+        </a>
+
+        <a href="/Home/TopScorers" style="text-decoration:none;">
+            <div style="background:#16213e; padding:30px; border-radius:12px; 
+                        text-align:center; width:180px; color:white;">
+                <div style="font-size:2em;">⚽</div>
+                <h3>Top Scorers</h3>
+                <p style="color:#aaa; font-size:0.9em;">View goal scorers</p>
+            </div>
+        </a>
+
+        @if (Context.Session.GetString("Username") != null)
+        {
+            <a href="/Team/Register" style="text-decoration:none;">
+                <div style="background:#16213e; padding:30px; border-radius:12px; 
+                            text-align:center; width:180px; color:white;">
+                    <div style="font-size:2em;">👥</div>
+                    <h3>My Team</h3>
+                    <p style="color:#aaa; font-size:0.9em;">Register your team</p>
+                </div>
+            </a>
+
+            <a href="/Match/MyMatches" style="text-decoration:none;">
+                <div style="background:#16213e; padding:30px; border-radius:12px; 
+                            text-align:center; width:180px; color:white;">
+                    <div style="font-size:2em;">🎮</div>
+                    <h3>My Matches</h3>
+                    <p style="color:#aaa; font-size:0.9em;">Submit scores</p>
+                </div>
+            </a>
+
+            <a href="/Account/Logout" style="text-decoration:none;">
+                <div style="background:#e94560; padding:30px; border-radius:12px; 
+                            text-align:center; width:180px; color:white;">
+                    <div style="font-size:2em;">🚪</div>
+                    <h3>Logout</h3>
+                    <p style="color:#fff; font-size:0.9em;">Sign out</p>
+                </div>
+            </a>
+        }
+    </div>
+</div>
+EOF
