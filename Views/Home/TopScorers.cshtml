@@ -1,46 +1,117 @@
 @{
     ViewData["Title"] = "Top Scorers";
     var scorers = ViewBag.Scorers as List<dynamic>;
+    var assisters = ViewBag.Assisters as List<dynamic>;
+    var cleanSheets = ViewBag.CleanSheets as List<dynamic>;
 }
 
 <div style="max-width:700px; margin:40px auto; padding:20px; color:white;">
-    <h2 style="color:#e94560; text-align:center;">⚽ Top Scorers</h2>
+    <h2 style="color:#e94560; text-align:center;">🏆 Player Statistics</h2>
 
-    @if (scorers == null || scorers.Count == 0)
+    @if (ViewBag.Error != null)
     {
-        <div style="background:#16213e; padding:30px; border-radius:12px; text-align:center;">
-            <p>No goals scored yet.</p>
+        <div style="background:#e94560; padding:15px; border-radius:8px; margin-bottom:20px;">
+            ⚠️ Error: @ViewBag.Error
         </div>
     }
-    else
-    {
-        <div style="background:#16213e; padding:20px; border-radius:12px;">
+
+    <!-- TOP SCORERS -->
+    <div style="background:#16213e; padding:20px; border-radius:12px; margin-bottom:25px;">
+        <h3 style="color:#e94560;">⚽ Top Scorers</h3>
+        @if (scorers == null || scorers.Count == 0)
+        {
+            <p style="color:#aaa;">No goals scored yet.</p>
+        }
+        else
+        {
             <table style="width:100%; border-collapse:collapse;">
                 <tr style="color:#aaa; font-size:0.85em; border-bottom:1px solid #333;">
-                    <th style="padding:10px; text-align:left;">#</th>
-                    <th style="padding:10px; text-align:left;">Player</th>
-                    <th style="padding:10px; text-align:left;">Team</th>
-                    <th style="padding:10px; text-align:left;">Group</th>
-                    <th style="padding:10px; text-align:center; color:white;">Goals</th>
+                    <th style="padding:8px; text-align:left;">#</th>
+                    <th style="padding:8px; text-align:left;">Player</th>
+                    <th style="padding:8px; text-align:left;">Team</th>
+                    <th style="padding:8px; text-align:center;">⚽</th>
                 </tr>
                 @{ int rank = 1; }
-                @foreach (var scorer in scorers)
+                @foreach (var s in scorers)
                 {
                     string medal = rank == 1 ? "🥇" : rank == 2 ? "🥈" : rank == 3 ? "🥉" : $"{rank}.";
                     <tr style="border-bottom:1px solid #222;">
-                        <td style="padding:10px;">@medal</td>
-                        <td style="padding:10px; font-weight:bold;">@scorer.Player</td>
-                        <td style="padding:10px; color:#aaa;">@scorer.Team</td>
-                        <td style="padding:10px; color:#aaa;">@scorer.Group</td>
-                        <td style="padding:10px; text-align:center; color:#e94560; font-weight:bold; font-size:1.2em;">@scorer.Goals</td>
+                        <td style="padding:8px;">@medal</td>
+                        <td style="padding:8px; font-weight:bold;">@s.Player</td>
+                        <td style="padding:8px; color:#aaa;">@s.Team</td>
+                        <td style="padding:8px; text-align:center; color:#e94560; font-weight:bold;">@s.Goals</td>
                     </tr>
                     rank++;
                 }
             </table>
-        </div>
-    }
+        }
+    </div>
 
-    <p style="text-align:center; margin-top:20px;">
+    <!-- TOP ASSISTERS -->
+    <div style="background:#16213e; padding:20px; border-radius:12px; margin-bottom:25px;">
+        <h3 style="color:#e94560;">🎯 Top Assists</h3>
+        @if (assisters == null || assisters.Count == 0)
+        {
+            <p style="color:#aaa;">No assists recorded yet.</p>
+        }
+        else
+        {
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="color:#aaa; font-size:0.85em; border-bottom:1px solid #333;">
+                    <th style="padding:8px; text-align:left;">#</th>
+                    <th style="padding:8px; text-align:left;">Player</th>
+                    <th style="padding:8px; text-align:left;">Team</th>
+                    <th style="padding:8px; text-align:center;">🎯</th>
+                </tr>
+                @{ int rank2 = 1; }
+                @foreach (var a in assisters)
+                {
+                    string medal = rank2 == 1 ? "🥇" : rank2 == 2 ? "🥈" : rank2 == 3 ? "🥉" : $"{rank2}.";
+                    <tr style="border-bottom:1px solid #222;">
+                        <td style="padding:8px;">@medal</td>
+                        <td style="padding:8px; font-weight:bold;">@a.Player</td>
+                        <td style="padding:8px; color:#aaa;">@a.Team</td>
+                        <td style="padding:8px; text-align:center; color:#e94560; font-weight:bold;">@a.Assists</td>
+                    </tr>
+                    rank2++;
+                }
+            </table>
+        }
+    </div>
+
+    <!-- CLEAN SHEETS -->
+    <div style="background:#16213e; padding:20px; border-radius:12px; margin-bottom:25px;">
+        <h3 style="color:#e94560;">🧤 Clean Sheets</h3>
+        @if (cleanSheets == null || cleanSheets.Count == 0)
+        {
+            <p style="color:#aaa;">No clean sheets recorded yet.</p>
+        }
+        else
+        {
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="color:#aaa; font-size:0.85em; border-bottom:1px solid #333;">
+                    <th style="padding:8px; text-align:left;">#</th>
+                    <th style="padding:8px; text-align:left;">Goalkeeper</th>
+                    <th style="padding:8px; text-align:left;">Team</th>
+                    <th style="padding:8px; text-align:center;">🧤</th>
+                </tr>
+                @{ int rank3 = 1; }
+                @foreach (var cs in cleanSheets)
+                {
+                    string medal = rank3 == 1 ? "🥇" : rank3 == 2 ? "🥈" : rank3 == 3 ? "🥉" : $"{rank3}.";
+                    <tr style="border-bottom:1px solid #222;">
+                        <td style="padding:8px;">@medal</td>
+                        <td style="padding:8px; font-weight:bold;">@cs.Player</td>
+                        <td style="padding:8px; color:#aaa;">@cs.Team</td>
+                        <td style="padding:8px; text-align:center; color:#e94560; font-weight:bold;">@cs.CleanSheets</td>
+                    </tr>
+                    rank3++;
+                }
+            </table>
+        }
+    </div>
+
+    <p style="text-align:center;">
         <a href="/" style="color:#e94560;">← Back to Home</a>
     </p>
 </div>
