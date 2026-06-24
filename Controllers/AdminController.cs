@@ -21,6 +21,35 @@ namespace EFootballWeb.Controllers
 
             _connection.Open();
 
+            // Check current status
+            string statusSql = "SELECT status FROM tournament WHERE id=1";
+            using var statusCmd = new MySqlCommand(statusSql, _connection);
+            string currentStatus = (await statusCmd.ExecuteScalarAsync())?.ToString() ?? "";
+
+            // Check match count
+            string matchCountSql = "SELECT COUNT(*) FROM matches";
+            using var matchCountCmd = new MySqlCommand(matchCountSql, _connection);
+            long matchCount = (long)await matchCountCmd.ExecuteScalarAsync()!;
+
+            // If ongoing but no matches — reset and restart
+            if (currentStatus == "ongoing" && matchCount == 0)
+            {
+                string resetSql = @"UPDATE tournament SET 
+                    status='registration', stage='group',
+                    current_league='THE_BEGINNING',
+                    registration_deadline=NULL
+                    WHERE id=1";
+                using var resetCmd = new MySqlCommand(resetSql, _connection);
+                await resetCmd.ExecuteNonQueryAsync();
+                currentStatus = "registration";
+            }
+
+            if (currentStatus == "ongoing")
+            {
+                _connection.Close();
+                return Content($"⚠️ Tournament already started with {matchCount} matches! Visit /Admin/Reset?key=efootball2026secret to reset.");
+            }
+
             // Check teams
             string countSql = "SELECT COUNT(*) FROM teams";
             using var countCmd = new MySqlCommand(countSql, _connection);
@@ -32,16 +61,13 @@ namespace EFootballWeb.Controllers
                 return Content($"⚠️ Not enough teams. Only {teamCount} registered.");
             }
 
-            // Check if already started
-            string checkSql = "SELECT status FROM tournament WHERE id=1";
-            using var checkCmd = new MySqlCommand(checkSql, _connection);
-            string currentStatus = (await checkCmd.ExecuteScalarAsync())?.ToString() ?? "";
-
-            if (currentStatus == "ongoing")
-            {
-                _connection.Close();
-                return Content("⚠️ Tournament already started!");
-            }
+            // Reset team stats before assigning groups
+            string resetTeamsSql = @"UPDATE teams SET 
+                group_name=NULL, played=0, wins=0, draws=0, losses=0,
+                goals_for=0, goals_against=0, goal_diff=0, points=0,
+                league='THE_BEGINNING' WHERE id > 0";
+            using var resetTeamsCmd = new MySqlCommand(resetTeamsSql, _connection);
+            await resetTeamsCmd.ExecuteNonQueryAsync();
 
             // Get teams per group
             string tpgSql = "SELECT teams_per_group FROM tournament WHERE id=1";
@@ -49,7 +75,7 @@ namespace EFootballWeb.Controllers
             int teamsPerGroup = Convert.ToInt32(await tpgCmd.ExecuteScalarAsync());
 
             // Assign groups randomly
-            string teamsSql = "SELECT id FROM teams WHERE group_name IS NULL ORDER BY RAND()";
+            string teamsSql = "SELECT id FROM teams ORDER BY RAND()";
             using var teamsCmd = new MySqlCommand(teamsSql, _connection);
             using var teamsReader = await teamsCmd.ExecuteReaderAsync();
 
@@ -140,20 +166,20 @@ namespace EFootballWeb.Controllers
             }
 
             // Update tournament status
-            string statusSql = @"UPDATE tournament SET 
+            string startSql = @"UPDATE tournament SET 
                 status='ongoing', stage='group',
                 current_league='THE_BEGINNING',
                 registration_deadline=NOW()
                 WHERE id=1";
-            using var statusCmd = new MySqlCommand(statusSql, _connection);
-            await statusCmd.ExecuteNonQueryAsync();
+            using var startCmd = new MySqlCommand(startSql, _connection);
+            await startCmd.ExecuteNonQueryAsync();
 
             _connection.Close();
 
             return Content($@"✅ Tournament started successfully!
 ━━━━━━━━━━━━━━━━━━━━━━━
-Teams registered : {teamCount}
-Groups created   : {groups.Count}
+Teams registered  : {teamCount}
+Groups created    : {groups.Count}
 Fixtures generated: {fixtureCount}
 ━━━━━━━━━━━━━━━━━━━━━━━
 Visit /Home/Fixtures to see the schedule!");
