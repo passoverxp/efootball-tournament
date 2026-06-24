@@ -11,7 +11,12 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromHours(2);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
+    options.Cookie.Name = "EFootball.Session";
 });
+
+// Disable antiforgery token validation issues
+builder.Services.AddDataProtection()
+    .SetApplicationName("EFootballTournament");
 
 builder.Services.AddTransient<MySqlConnection>(_ =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -179,11 +184,7 @@ using (var connection = new MySqlConnection(
     Console.WriteLine("✅ Database tables ready!");
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-}
-
+app.UseExceptionHandler("/Home/Error");
 app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
