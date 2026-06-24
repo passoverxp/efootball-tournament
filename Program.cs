@@ -15,8 +15,6 @@ builder.Services.AddSession(options =>
 });
 
 // Disable antiforgery token validation issues
-builder.Services.AddDataProtection()
-    .SetApplicationName("EFootballTournament");
 
 builder.Services.AddTransient<MySqlConnection>(_ =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
