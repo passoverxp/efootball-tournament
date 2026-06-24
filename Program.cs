@@ -2,12 +2,9 @@ using MySqlConnector;
 
 var builder = WebApplication.CreateBuilder(args);
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-// Add MVC
-builder.Services.AddControllersWithViews();
 
-// Add Session (for login)
+builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
@@ -16,12 +13,12 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Add MariaDB connection
 builder.Services.AddTransient<MySqlConnection>(_ =>
     new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddHostedService<EFootballWeb.Services.TournamentScheduler>();
+
 var app = builder.Build();
-// ── AUTO CREATE TABLES ON STARTUP ────────────────────────
+
 using (var connection = new MySqlConnection(
     builder.Configuration.GetConnectionString("DefaultConnection")))
 {
@@ -40,7 +37,7 @@ using (var connection = new MySqlConnection(
         @"CREATE TABLE IF NOT EXISTS tournament (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
-            registration_deadline DATETIME NOT NULL,
+            registration_deadline DATETIME NULL,
             teams_per_group INT DEFAULT 4,
             status ENUM('registration','ongoing','finished') DEFAULT 'registration',
             tournament_number INT DEFAULT 1,
@@ -173,10 +170,9 @@ using (var connection = new MySqlConnection(
         cmd.ExecuteNonQuery();
     }
 
-    // Insert default tournament if not exists
     string insertTournament = @"
         INSERT IGNORE INTO tournament (id, name, registration_deadline, teams_per_group, status)
-        VALUES (1, 'eFootball Tournament 2026', DATE_ADD(NOW(), INTERVAL 7 DAY), 4, 'registration');";
+        VALUES (1, 'eFootball Tournament 2026', NULL, 4, 'registration');";
     using var tCmd = new MySqlCommand(insertTournament, connection);
     tCmd.ExecuteNonQuery();
 
