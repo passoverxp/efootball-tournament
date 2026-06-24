@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "dotnet publish -c Release -o out"
+  },
+  "deploy": {
+    "startCommand": "dotnet out/EFootballWeb.dll"
+  }
+}
