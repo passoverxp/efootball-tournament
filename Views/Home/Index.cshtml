@@ -13,6 +13,35 @@
             <div style="background:#16213e; padding:15px; border-radius:10px; margin-top:20px; display:inline-block;">
                 <p style="margin:0;">👋 Welcome back, <strong style="color:#e94560;">@Context.Session.GetString("Username")</strong>!</p>
             </div>
+
+            @if (ViewBag.HasTeam == true && ViewBag.TournamentStatus == "registration")
+            {
+                <div style="margin-top:20px; background:#16213e; padding:20px; border-radius:12px; max-width:400px; margin:20px auto;">
+                    <h3 style="color:#e94560;">📋 Tournament Confirmation</h3>
+                    <p style="color:#aaa;">Team: <strong style="color:white;">@ViewBag.TeamName</strong></p>
+
+                    @if (ViewBag.Confirmed == true)
+                    {
+                        <div style="background:#0f3460; padding:10px; border-radius:6px; margin-bottom:10px;">
+                            ✅ You are confirmed for the next tournament!
+                        </div>
+                        <a href="/Home/Withdraw" style="display:block; background:#7b2d00; color:white; 
+                           padding:10px; border-radius:6px; text-decoration:none; text-align:center;">
+                            ❌ Withdraw from Tournament
+                        </a>
+                    }
+                    else
+                    {
+                        <div style="background:#7b2d00; padding:10px; border-radius:6px; margin-bottom:10px;">
+                            ⚠️ You have not confirmed for the next tournament!
+                        </div>
+                        <a href="/Home/Confirm" style="display:block; background:#e94560; color:white; 
+                           padding:10px; border-radius:6px; text-decoration:none; text-align:center;">
+                            ✅ Confirm Participation
+                        </a>
+                    }
+                </div>
+            }
         }
         else
         {

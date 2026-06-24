@@ -31,14 +31,13 @@ namespace EFootballWeb.Controllers
             using var matchCountCmd = new MySqlCommand(matchCountSql, _connection);
             long matchCount = (long)await matchCountCmd.ExecuteScalarAsync()!;
 
-            // If ongoing but no matches — reset and restart
+            // If ongoing but no matches — reset
             if (currentStatus == "ongoing" && matchCount == 0)
             {
                 string resetSql = @"UPDATE tournament SET 
                     status='registration', stage='group',
                     current_league='THE_BEGINNING',
-                    registration_deadline=NULL
-                    WHERE id=1";
+                    registration_deadline=NULL WHERE id=1";
                 using var resetCmd = new MySqlCommand(resetSql, _connection);
                 await resetCmd.ExecuteNonQueryAsync();
                 currentStatus = "registration";
@@ -50,22 +49,27 @@ namespace EFootballWeb.Controllers
                 return Content($"⚠️ Tournament already started with {matchCount} matches! Visit /Admin/Reset?key=efootball2026secret to reset.");
             }
 
-            // Check teams
-            string countSql = "SELECT COUNT(*) FROM teams";
+            // Only get CONFIRMED teams
+            string countSql = "SELECT COUNT(*) FROM teams WHERE confirmed=1";
             using var countCmd = new MySqlCommand(countSql, _connection);
             long teamCount = (long)await countCmd.ExecuteScalarAsync()!;
+
+            // Also get total teams
+            string totalSql = "SELECT COUNT(*) FROM teams";
+            using var totalCmd = new MySqlCommand(totalSql, _connection);
+            long totalTeams = (long)await totalCmd.ExecuteScalarAsync()!;
 
             if (teamCount < 2)
             {
                 _connection.Close();
-                return Content($"⚠️ Not enough teams. Only {teamCount} registered.");
+                return Content($"⚠️ Not enough confirmed teams. {teamCount} confirmed out of {totalTeams} registered. Players must confirm participation first!");
             }
 
-            // Reset team stats before assigning groups
+            // Reset confirmed team stats
             string resetTeamsSql = @"UPDATE teams SET 
                 group_name=NULL, played=0, wins=0, draws=0, losses=0,
                 goals_for=0, goals_against=0, goal_diff=0, points=0,
-                league='THE_BEGINNING' WHERE id > 0";
+                league='THE_BEGINNING' WHERE confirmed=1";
             using var resetTeamsCmd = new MySqlCommand(resetTeamsSql, _connection);
             await resetTeamsCmd.ExecuteNonQueryAsync();
 
@@ -74,8 +78,8 @@ namespace EFootballWeb.Controllers
             using var tpgCmd = new MySqlCommand(tpgSql, _connection);
             int teamsPerGroup = Convert.ToInt32(await tpgCmd.ExecuteScalarAsync());
 
-            // Assign groups randomly
-            string teamsSql = "SELECT id FROM teams ORDER BY RAND()";
+            // Assign groups — only confirmed teams
+            string teamsSql = "SELECT id FROM teams WHERE confirmed=1 ORDER BY RAND()";
             using var teamsCmd = new MySqlCommand(teamsSql, _connection);
             using var teamsReader = await teamsCmd.ExecuteReaderAsync();
 
@@ -114,7 +118,7 @@ namespace EFootballWeb.Controllers
                 groups.Add(groupsReader["group_name"].ToString()!);
             await groupsReader.CloseAsync();
 
-            // Generate fixtures with scheduling
+            // Generate fixtures
             var teamSchedule = new Dictionary<int, HashSet<DateTime>>();
             DateTime startDate = DateTime.Today;
             int fixtureCount = 0;
@@ -174,11 +178,17 @@ namespace EFootballWeb.Controllers
             using var startCmd = new MySqlCommand(startSql, _connection);
             await startCmd.ExecuteNonQueryAsync();
 
+            // Reset confirmation for next tournament
+            string resetConfirmSql = "UPDATE teams SET confirmed=0";
+            using var resetConfirmCmd = new MySqlCommand(resetConfirmSql, _connection);
+            await resetConfirmCmd.ExecuteNonQueryAsync();
+
             _connection.Close();
 
-            return Content($@"✅ Tournament started successfully!
+            return Content($@"✅ Tournament started!
 ━━━━━━━━━━━━━━━━━━━━━━━
-Teams registered  : {teamCount}
+Confirmed teams   : {teamCount}
+Total registered  : {totalTeams}
 Groups created    : {groups.Count}
 Fixtures generated: {fixtureCount}
 ━━━━━━━━━━━━━━━━━━━━━━━
@@ -198,6 +208,7 @@ Visit /Home/Fixtures to see the schedule!");
                           (SELECT COUNT(*) FROM teams WHERE league='THE_BEGINNING') as beginning_teams,
                           (SELECT COUNT(*) FROM teams WHERE league='FIGHTERS') as fighters_teams,
                           (SELECT COUNT(*) FROM teams WHERE league='LEGENDS') as legends_teams,
+                          (SELECT COUNT(*) FROM teams WHERE confirmed=1) as confirmed_teams,
                           (SELECT COUNT(*) FROM matches WHERE status='pending') as pending_matches,
                           (SELECT COUNT(*) FROM matches WHERE status='completed') as completed_matches,
                           (SELECT COUNT(*) FROM matches WHERE status='disputed') as disputed_matches
@@ -221,6 +232,7 @@ TEAMS:
   THE_BEGINNING : {reader["beginning_teams"]}
   FIGHTERS      : {reader["fighters_teams"]}
   LEGENDS       : {reader["legends_teams"]}
+  Confirmed     : {reader["confirmed_teams"]}
 
 MATCHES:
   Pending   : {reader["pending_matches"]}
@@ -247,7 +259,7 @@ MATCHES:
                 "DELETE FROM matches",
                 "DELETE FROM promotions",
                 "DELETE FROM tournament_history",
-                "UPDATE teams SET group_name=NULL, played=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0, goal_diff=0, points=0, league='THE_BEGINNING'",
+                "UPDATE teams SET group_name=NULL, played=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0, goal_diff=0, points=0, league='THE_BEGINNING', confirmed=0",
                 "UPDATE players SET goals=0, assists=0, clean_sheets=0",
                 "UPDATE tournament SET status='registration', stage='group', current_league='THE_BEGINNING', next_start_date=NULL, registration_deadline=NULL WHERE id=1"
             };
@@ -259,7 +271,7 @@ MATCHES:
             }
 
             _connection.Close();
-            return Content("✅ Tournament reset! Registration is now open.");
+            return Content("✅ Tournament reset! Players must confirm participation before next start.");
         }
     }
 }

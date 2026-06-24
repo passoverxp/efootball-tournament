@@ -12,7 +12,84 @@ namespace EFootballWeb.Controllers
             _connection = connection;
         }
 
-        public IActionResult Index() => View();
+        public IActionResult Index()
+        {
+            if (HttpContext.Session.GetInt32("UserId") != null)
+            {
+                try
+                {
+                    _connection.Open();
+                    int userId = HttpContext.Session.GetInt32("UserId")!.Value;
+
+                    // Check tournament status
+                    string tournSql = "SELECT status FROM tournament WHERE id=1";
+                    using var tournCmd = new MySqlCommand(tournSql, _connection);
+                    string tournStatus = tournCmd.ExecuteScalar()?.ToString() ?? "registration";
+
+                    // Check if player has a team and confirmation status
+                    string teamSql = "SELECT id, name, confirmed FROM teams WHERE user_id=@userId";
+                    using var teamCmd = new MySqlCommand(teamSql, _connection);
+                    teamCmd.Parameters.AddWithValue("@userId", userId);
+                    using var reader = teamCmd.ExecuteReader();
+
+                    if (reader.Read())
+                    {
+                        ViewBag.TeamName = reader["name"].ToString();
+                        ViewBag.Confirmed = Convert.ToBoolean(reader["confirmed"]);
+                        ViewBag.HasTeam = true;
+                    }
+                    else
+                    {
+                        ViewBag.HasTeam = false;
+                    }
+                    reader.Close();
+                    ViewBag.TournamentStatus = tournStatus;
+                    _connection.Close();
+                }
+                catch
+                {
+                    ViewBag.HasTeam = false;
+                    ViewBag.TournamentStatus = "registration";
+                }
+            }
+            return View();
+        }
+
+        public IActionResult Confirm()
+        {
+            if (HttpContext.Session.GetInt32("UserId") == null)
+                return RedirectToAction("Login", "Account");
+
+            int userId = HttpContext.Session.GetInt32("UserId")!.Value;
+            _connection.Open();
+
+            string sql = "UPDATE teams SET confirmed=1 WHERE user_id=@userId";
+            using var cmd = new MySqlCommand(sql, _connection);
+            cmd.Parameters.AddWithValue("@userId", userId);
+            cmd.ExecuteNonQuery();
+            _connection.Close();
+
+            TempData["Success"] = "✅ You are confirmed for the next tournament!";
+            return RedirectToAction("Index");
+        }
+
+        public IActionResult Withdraw()
+        {
+            if (HttpContext.Session.GetInt32("UserId") == null)
+                return RedirectToAction("Login", "Account");
+
+            int userId = HttpContext.Session.GetInt32("UserId")!.Value;
+            _connection.Open();
+
+            string sql = "UPDATE teams SET confirmed=0 WHERE user_id=@userId";
+            using var cmd = new MySqlCommand(sql, _connection);
+            cmd.Parameters.AddWithValue("@userId", userId);
+            cmd.ExecuteNonQuery();
+            _connection.Close();
+
+            TempData["Success"] = "⚠️ You have withdrawn from the next tournament.";
+            return RedirectToAction("Index");
+        }
 
         public IActionResult Standings()
         {
@@ -114,7 +191,6 @@ namespace EFootballWeb.Controllers
             {
                 _connection.Open();
 
-                // Top scorers
                 string scorersSql = @"
                     SELECT p.name as player, t.name as team, p.goals
                     FROM players p JOIN teams t ON p.team_id = t.id
@@ -130,7 +206,6 @@ namespace EFootballWeb.Controllers
                     });
                 scorersReader.Close();
 
-                // Top assisters
                 string assistsSql = @"
                     SELECT p.name as player, t.name as team, p.assists
                     FROM players p JOIN teams t ON p.team_id = t.id
@@ -146,7 +221,6 @@ namespace EFootballWeb.Controllers
                     });
                 assistsReader.Close();
 
-                // Clean sheets - use 1 instead of TRUE for compatibility
                 string csSql = @"
                     SELECT p.name as player, t.name as team, p.clean_sheets
                     FROM players p JOIN teams t ON p.team_id = t.id
