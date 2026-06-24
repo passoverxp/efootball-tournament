@@ -15,48 +15,57 @@ namespace EFootballWeb.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // Wait 10 seconds for app to fully start and tables to be created
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+
             while (!stoppingToken.IsCancellationRequested)
             {
-                using var connection = new MySqlConnection(
-                    _config.GetConnectionString("DefaultConnection"));
-                await connection.OpenAsync();
-
-                string sql = "SELECT registration_deadline, status FROM tournament WHERE id = 1";
-                using var cmd = new MySqlCommand(sql, connection);
-                using var reader = await cmd.ExecuteReaderAsync();
-
-                if (!await reader.ReadAsync()) break;
-
-                DateTime deadline = Convert.ToDateTime(reader["registration_deadline"]);
-                string status = reader["status"].ToString()!;
-                await reader.CloseAsync();
-                await connection.CloseAsync();
-
-                // Already started — stop
-                if (status != "registration")
+                try
                 {
-                    _logger.LogInformation("✅ Tournament already started.");
-                    break;
-                }
-
-                TimeSpan timeUntilDeadline = deadline - DateTime.Now;
-
-                if (timeUntilDeadline <= TimeSpan.Zero)
-                {
-                    // Deadline passed — trigger immediately
-                    _logger.LogInformation("⏰ Deadline reached! Assigning groups & fixtures...");
-                    using var conn2 = new MySqlConnection(
+                    using var connection = new MySqlConnection(
                         _config.GetConnectionString("DefaultConnection"));
-                    await conn2.OpenAsync();
-                    var middleware = new TournamentMiddleware(null!, _config);
-                    await middleware.RunAsync(conn2);
-                    break;
+                    await connection.OpenAsync();
+
+                    string sql = "SELECT registration_deadline, status FROM tournament WHERE id = 1";
+                    using var cmd = new MySqlCommand(sql, connection);
+                    using var reader = await cmd.ExecuteReaderAsync();
+
+                    if (!await reader.ReadAsync())
+                    {
+                        await reader.CloseAsync();
+                        await connection.CloseAsync();
+                        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                        continue;
+                    }
+
+                    string status = reader["status"].ToString()!;
+                    bool hasDeadline = reader["registration_deadline"] != DBNull.Value;
+                    DateTime? deadline = hasDeadline
+                        ? Convert.ToDateTime(reader["registration_deadline"])
+                        : null;
+                    await reader.CloseAsync();
+                    await connection.CloseAsync();
+
+                    if (status != "registration")
+                    {
+                        _logger.LogInformation("✅ Tournament already started.");
+                        break;
+                    }
+
+                    if (deadline.HasValue && DateTime.Now >= deadline.Value)
+                    {
+                        _logger.LogInformation("⏰ Deadline reached! Starting tournament...");
+                        var middleware = new TournamentMiddleware(null!, _config);
+                        await middleware.RunAsync(null);
+                        break;
+                    }
+
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
                 }
-                else
+                catch (Exception ex)
                 {
-                    // Sleep exactly until deadline
-                    _logger.LogInformation($"⏳ Tournament starts in {timeUntilDeadline.TotalHours:F1} hours");
-                    await Task.Delay(timeUntilDeadline, stoppingToken);
+                    _logger.LogError($"Scheduler error: {ex.Message}");
+                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
                 }
             }
         }

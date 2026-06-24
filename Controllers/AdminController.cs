@@ -14,7 +14,6 @@ namespace EFootballWeb.Controllers
             _config = config;
         }
 
-        // SECRET URL: /Admin/Start?key=yourpassword
         public async Task<IActionResult> Start(string key)
         {
             if (key != "efootball2026secret")
@@ -22,7 +21,7 @@ namespace EFootballWeb.Controllers
 
             _connection.Open();
 
-            // Check how many teams registered
+            // Check teams
             string countSql = "SELECT COUNT(*) FROM teams";
             using var countCmd = new MySqlCommand(countSql, _connection);
             long teamCount = (long)await countCmd.ExecuteScalarAsync()!;
@@ -30,24 +29,136 @@ namespace EFootballWeb.Controllers
             if (teamCount < 2)
             {
                 _connection.Close();
-                return Content($"⚠️ Not enough teams to start. Only {teamCount} team(s) registered.");
+                return Content($"⚠️ Not enough teams. Only {teamCount} registered.");
             }
 
-            // Force start — update deadline to now
-            string updateSql = @"UPDATE tournament SET 
-                registration_deadline = NOW() WHERE id = 1";
-            using var updateCmd = new MySqlCommand(updateSql, _connection);
-            await updateCmd.ExecuteNonQueryAsync();
+            // Check if already started
+            string checkSql = "SELECT status FROM tournament WHERE id=1";
+            using var checkCmd = new MySqlCommand(checkSql, _connection);
+            string currentStatus = (await checkCmd.ExecuteScalarAsync())?.ToString() ?? "";
+
+            if (currentStatus == "ongoing")
+            {
+                _connection.Close();
+                return Content("⚠️ Tournament already started!");
+            }
+
+            // Get teams per group
+            string tpgSql = "SELECT teams_per_group FROM tournament WHERE id=1";
+            using var tpgCmd = new MySqlCommand(tpgSql, _connection);
+            int teamsPerGroup = Convert.ToInt32(await tpgCmd.ExecuteScalarAsync());
+
+            // Assign groups randomly
+            string teamsSql = "SELECT id FROM teams WHERE group_name IS NULL ORDER BY RAND()";
+            using var teamsCmd = new MySqlCommand(teamsSql, _connection);
+            using var teamsReader = await teamsCmd.ExecuteReaderAsync();
+
+            List<int> teamIds = new();
+            while (await teamsReader.ReadAsync())
+                teamIds.Add(Convert.ToInt32(teamsReader["id"]));
+            await teamsReader.CloseAsync();
+
+            string[] labels = { "A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P" };
+            int groupIndex = 0, countInGroup = 0;
+
+            foreach (var teamId in teamIds)
+            {
+                string group = labels[groupIndex];
+                string updateSql = "UPDATE teams SET group_name=@group WHERE id=@id";
+                using var updateCmd = new MySqlCommand(updateSql, _connection);
+                updateCmd.Parameters.AddWithValue("@group", group);
+                updateCmd.Parameters.AddWithValue("@id", teamId);
+                await updateCmd.ExecuteNonQueryAsync();
+
+                countInGroup++;
+                if (countInGroup >= teamsPerGroup)
+                {
+                    countInGroup = 0;
+                    groupIndex++;
+                }
+            }
+
+            // Get groups
+            string groupsSql = "SELECT DISTINCT group_name FROM teams WHERE group_name IS NOT NULL";
+            using var groupsCmd = new MySqlCommand(groupsSql, _connection);
+            using var groupsReader = await groupsCmd.ExecuteReaderAsync();
+
+            List<string> groups = new();
+            while (await groupsReader.ReadAsync())
+                groups.Add(groupsReader["group_name"].ToString()!);
+            await groupsReader.CloseAsync();
+
+            // Generate fixtures with scheduling
+            var teamSchedule = new Dictionary<int, HashSet<DateTime>>();
+            DateTime startDate = DateTime.Today;
+            int fixtureCount = 0;
+
+            foreach (var group in groups)
+            {
+                string gTeamsSql = "SELECT id FROM teams WHERE group_name=@group";
+                using var gTeamsCmd = new MySqlCommand(gTeamsSql, _connection);
+                gTeamsCmd.Parameters.AddWithValue("@group", group);
+                using var gTeamsReader = await gTeamsCmd.ExecuteReaderAsync();
+
+                List<int> gTeamIds = new();
+                while (await gTeamsReader.ReadAsync())
+                    gTeamIds.Add(Convert.ToInt32(gTeamsReader["id"]));
+                await gTeamsReader.CloseAsync();
+
+                for (int i = 0; i < gTeamIds.Count; i++)
+                {
+                    for (int j = i + 1; j < gTeamIds.Count; j++)
+                    {
+                        int home = gTeamIds[i];
+                        int away = gTeamIds[j];
+
+                        if (!teamSchedule.ContainsKey(home))
+                            teamSchedule[home] = new HashSet<DateTime>();
+                        if (!teamSchedule.ContainsKey(away))
+                            teamSchedule[away] = new HashSet<DateTime>();
+
+                        DateTime day = startDate;
+                        while (teamSchedule[home].Contains(day) ||
+                               teamSchedule[away].Contains(day))
+                            day = day.AddDays(1);
+
+                        teamSchedule[home].Add(day);
+                        teamSchedule[away].Add(day);
+
+                        string fixtureSql = @"INSERT INTO matches 
+                            (group_name, home_team_id, away_team_id, scheduled_date)
+                            VALUES (@group, @home, @away, @date)";
+                        using var fixtureCmd = new MySqlCommand(fixtureSql, _connection);
+                        fixtureCmd.Parameters.AddWithValue("@group", group);
+                        fixtureCmd.Parameters.AddWithValue("@home", home);
+                        fixtureCmd.Parameters.AddWithValue("@away", away);
+                        fixtureCmd.Parameters.AddWithValue("@date", day);
+                        await fixtureCmd.ExecuteNonQueryAsync();
+                        fixtureCount++;
+                    }
+                }
+            }
+
+            // Update tournament status
+            string statusSql = @"UPDATE tournament SET 
+                status='ongoing', stage='group',
+                current_league='THE_BEGINNING',
+                registration_deadline=NOW()
+                WHERE id=1";
+            using var statusCmd = new MySqlCommand(statusSql, _connection);
+            await statusCmd.ExecuteNonQueryAsync();
+
             _connection.Close();
 
-            // Trigger middleware
-            var middleware = new EFootballWeb.Services.TournamentMiddleware(null!, _config);
-            await middleware.RunAsync(null);
-
-            return Content($"✅ Tournament started with {teamCount} teams! Groups assigned and fixtures generated. Visit /Home/Fixtures to see the schedule.");
+            return Content($@"✅ Tournament started successfully!
+━━━━━━━━━━━━━━━━━━━━━━━
+Teams registered : {teamCount}
+Groups created   : {groups.Count}
+Fixtures generated: {fixtureCount}
+━━━━━━━━━━━━━━━━━━━━━━━
+Visit /Home/Fixtures to see the schedule!");
         }
 
-        // View tournament status: /Admin/Status?key=yourpassword
         public IActionResult Status(string key)
         {
             if (key != "efootball2026secret")
@@ -62,7 +173,8 @@ namespace EFootballWeb.Controllers
                           (SELECT COUNT(*) FROM teams WHERE league='FIGHTERS') as fighters_teams,
                           (SELECT COUNT(*) FROM teams WHERE league='LEGENDS') as legends_teams,
                           (SELECT COUNT(*) FROM matches WHERE status='pending') as pending_matches,
-                          (SELECT COUNT(*) FROM matches WHERE status='completed') as completed_matches
+                          (SELECT COUNT(*) FROM matches WHERE status='completed') as completed_matches,
+                          (SELECT COUNT(*) FROM matches WHERE status='disputed') as disputed_matches
                           FROM tournament t WHERE t.id=1";
 
             using var cmd = new MySqlCommand(sql, _connection);
@@ -72,12 +184,12 @@ namespace EFootballWeb.Controllers
             string output = $@"
 🏆 TOURNAMENT STATUS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tournament #  : {reader["tournament_number"]}
-Status        : {reader["status"]}
-Stage         : {reader["stage"]}
-Current League: {reader["current_league"]}
-Deadline      : {reader["registration_deadline"]}
-Next Start    : {(reader["next_start_date"] == DBNull.Value ? "N/A" : reader["next_start_date"])}
+Tournament #   : {reader["tournament_number"]}
+Status         : {reader["status"]}
+Stage          : {reader["stage"]}
+Current League : {reader["current_league"]}
+Deadline       : {(reader["registration_deadline"] == DBNull.Value ? "Not set" : reader["registration_deadline"])}
+Next Start     : {(reader["next_start_date"] == DBNull.Value ? "N/A" : reader["next_start_date"])}
 
 TEAMS:
   THE_BEGINNING : {reader["beginning_teams"]}
@@ -87,13 +199,13 @@ TEAMS:
 MATCHES:
   Pending   : {reader["pending_matches"]}
   Completed : {reader["completed_matches"]}
+  Disputed  : {reader["disputed_matches"]}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
             _connection.Close();
             return Content(output);
         }
 
-        // Reset tournament: /Admin/Reset?key=yourpassword
         public async Task<IActionResult> Reset(string key)
         {
             if (key != "efootball2026secret")
@@ -111,7 +223,7 @@ MATCHES:
                 "DELETE FROM tournament_history",
                 "UPDATE teams SET group_name=NULL, played=0, wins=0, draws=0, losses=0, goals_for=0, goals_against=0, goal_diff=0, points=0, league='THE_BEGINNING'",
                 "UPDATE players SET goals=0, assists=0, clean_sheets=0",
-                "UPDATE tournament SET status='registration', stage='group', current_league='THE_BEGINNING', next_start_date=NULL, registration_deadline=DATE_ADD(NOW(), INTERVAL 7 DAY) WHERE id=1"
+                "UPDATE tournament SET status='registration', stage='group', current_league='THE_BEGINNING', next_start_date=NULL, registration_deadline=NULL WHERE id=1"
             };
 
             foreach (var sql in sqls)
@@ -121,7 +233,7 @@ MATCHES:
             }
 
             _connection.Close();
-            return Content("✅ Tournament reset! Registration is open for 7 days.");
+            return Content("✅ Tournament reset! Registration is now open.");
         }
     }
 }
