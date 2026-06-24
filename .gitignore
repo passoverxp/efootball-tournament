@@ -4,3 +4,7 @@ obj/
 .env
 appsettings.Development.json
 wwwroot/uploads/
+.gradle/
+build/
+local.properties
+*.apk
