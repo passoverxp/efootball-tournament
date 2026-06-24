@@ -114,6 +114,7 @@ namespace EFootballWeb.Controllers
             {
                 _connection.Open();
 
+                // Top scorers
                 string scorersSql = @"
                     SELECT p.name as player, t.name as team, p.goals
                     FROM players p JOIN teams t ON p.team_id = t.id
@@ -129,6 +130,7 @@ namespace EFootballWeb.Controllers
                     });
                 scorersReader.Close();
 
+                // Top assisters
                 string assistsSql = @"
                     SELECT p.name as player, t.name as team, p.assists
                     FROM players p JOIN teams t ON p.team_id = t.id
@@ -144,10 +146,11 @@ namespace EFootballWeb.Controllers
                     });
                 assistsReader.Close();
 
+                // Clean sheets - use 1 instead of TRUE for compatibility
                 string csSql = @"
                     SELECT p.name as player, t.name as team, p.clean_sheets
                     FROM players p JOIN teams t ON p.team_id = t.id
-                    WHERE p.is_goalkeeper = TRUE AND p.clean_sheets > 0
+                    WHERE p.is_goalkeeper = 1 AND p.clean_sheets > 0
                     ORDER BY p.clean_sheets DESC LIMIT 20";
                 using var csCmd = new MySqlCommand(csSql, _connection);
                 using var csReader = csCmd.ExecuteReader();
@@ -167,11 +170,12 @@ namespace EFootballWeb.Controllers
                 ViewBag.CleanSheets = cleanSheets;
                 return View();
             }
-            catch
+            catch (Exception ex)
             {
                 ViewBag.Scorers = new List<dynamic>();
                 ViewBag.Assisters = new List<dynamic>();
                 ViewBag.CleanSheets = new List<dynamic>();
+                ViewBag.Error = ex.Message;
                 return View();
             }
         }
